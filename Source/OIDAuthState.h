@@ -23,6 +23,7 @@
 @class OIDRegistrationResponse;
 @class OIDTokenResponse;
 @class OIDTokenRequest;
+@class OIDLogoutRequest;
 @protocol OIDAuthorizationFlowSession;
 @protocol OIDAuthorizationUICoordinator;
 @protocol OIDAuthStateChangeDelegate;
@@ -47,6 +48,8 @@ typedef void (^OIDAuthStateAction)(NSString *_Nullable accessToken,
  */
 typedef void (^OIDAuthStateAuthorizationCallback)(OIDAuthState *_Nullable authState,
                                                   NSError *_Nullable error);
+
+typedef void (^OIDLogoutAction)(BOOL success);
 
 /*! @brief A convenience class that retains the auth state between @c OIDAuthorizationResponse%s
         and @c OIDTokenResponse%s.
@@ -283,6 +286,10 @@ typedef void (^OIDAuthStateAuthorizationCallback)(OIDAuthState *_Nullable authSt
  */
 - (void)withFreshTokensPerformAction:(OIDAuthStateAction)action
     __deprecated_msg("Use OIDAuthState.performActionWithFreshTokens:");
+
+- (nullable OIDLogoutRequest*)logoutRequest;
+
+- (void)performLogout:(OIDLogoutAction)callback;
 
 @end
 

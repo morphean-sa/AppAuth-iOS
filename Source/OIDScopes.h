@@ -44,3 +44,5 @@ extern NSString *const OIDScopeAddress;
     @see http://openid.net/specs/openid-connect-core-1_0.html#ScopeClaims
  */
 extern NSString *const OIDScopePhone;
+
+extern NSString *const OIDScopeOffline;

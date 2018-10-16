@@ -26,6 +26,8 @@
 @class OIDServiceConfiguration;
 @class OIDTokenRequest;
 @class OIDTokenResponse;
+@class OIDLogoutRequest;
+@class OIDLogoutResponse;
 @protocol OIDAuthorizationFlowSession;
 @protocol OIDAuthorizationUICoordinator;
 
@@ -67,6 +69,10 @@ typedef NSDictionary<NSString *, NSString *> *_Nullable OIDTokenEndpointParamete
 */
 typedef void (^OIDRegistrationCompletion)(OIDRegistrationResponse *_Nullable registrationResponse,
                                           NSError *_Nullable error);
+
+
+typedef void (^OIDLogoutCallback)(OIDLogoutResponse *_Nullable logoutResponse,
+                                 NSError *_Nullable error);
 
 /*! @brief Performs various OAuth and OpenID Connect related calls via the user agent or
         \NSURLSession.
@@ -136,6 +142,8 @@ typedef void (^OIDRegistrationCompletion)(OIDRegistrationResponse *_Nullable reg
  */
 + (void)performRegistrationRequest:(OIDRegistrationRequest *)request
                         completion:(OIDRegistrationCompletion)completion;
+
++ (void)performLogoutRequest:(OIDLogoutRequest *)request callback:(OIDLogoutCallback)callback;
 
 @end
 

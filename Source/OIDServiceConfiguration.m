@@ -34,6 +34,10 @@ static NSString *const kTokenEndpointKey = @"tokenEndpoint";
  */
 static NSString *const kRegistrationEndpointKey = @"registrationEndpoint";
 
+/*! @brief The key for the @c registrationEndpoint property.
+ */
+static NSString *const kLogoutEndpointKey = @"logoutEndpoint";
+
 /*! @brief The key for the @c discoveryDocument property.
  */
 static NSString *const kDiscoveryDocumentKey = @"discoveryDocument";
@@ -45,6 +49,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)initWithAuthorizationEndpoint:(NSURL *)authorizationEndpoint
                                 tokenEndpoint:(NSURL *)tokenEndpoint
                          registrationEndpoint:(nullable NSURL *)registrationEndpoint
+                               logoutEndpoint:(nullable NSURL *)logoutEndpoint
                             discoveryDocument:(nullable OIDServiceDiscovery *)discoveryDocument
                             NS_DESIGNATED_INITIALIZER;
 
@@ -56,17 +61,20 @@ NS_ASSUME_NONNULL_BEGIN
 @synthesize tokenEndpoint = _tokenEndpoint;
 @synthesize registrationEndpoint = _registrationEndpoint;
 @synthesize discoveryDocument = _discoveryDocument;
+@synthesize logoutEndpoint = _logoutEndpoint;
 
 - (instancetype)init
     OID_UNAVAILABLE_USE_INITIALIZER(@selector(
         initWithAuthorizationEndpoint:
                        tokenEndpoint:
-                registrationEndpoint:)
+                registrationEndpoint:
+                      logoutEndpoint:)
     );
 
 - (instancetype)initWithAuthorizationEndpoint:(NSURL *)authorizationEndpoint
         tokenEndpoint:(NSURL *)tokenEndpoint
  registrationEndpoint:(nullable NSURL *)registrationEndpoint
+       logoutEndpoint:(nullable NSURL *)logoutEndpoint
     discoveryDocument:(nullable OIDServiceDiscovery *)discoveryDocument {
 
   self = [super init];
@@ -74,6 +82,7 @@ NS_ASSUME_NONNULL_BEGIN
     _authorizationEndpoint = [authorizationEndpoint copy];
     _tokenEndpoint = [tokenEndpoint copy];
     _registrationEndpoint = [registrationEndpoint copy];
+    _logoutEndpoint = [logoutEndpoint copy];
     _discoveryDocument = [discoveryDocument copy];
   }
   return self;
@@ -84,6 +93,7 @@ NS_ASSUME_NONNULL_BEGIN
   return [self initWithAuthorizationEndpoint:authorizationEndpoint
                                tokenEndpoint:tokenEndpoint
                         registrationEndpoint:nil
+                              logoutEndpoint:nil
                            discoveryDocument:nil];
 }
 
@@ -93,13 +103,26 @@ NS_ASSUME_NONNULL_BEGIN
   return [self initWithAuthorizationEndpoint:authorizationEndpoint
                                tokenEndpoint:tokenEndpoint
                         registrationEndpoint:registrationEndpoint
+                              logoutEndpoint:nil
                            discoveryDocument:nil];
+}
+
+- (instancetype)initWithAuthorizationEndpoint:(NSURL *)authorizationEndpoint
+                                tokenEndpoint:(NSURL *)tokenEndpoint
+                         registrationEndpoint:(nullable NSURL *)registrationEndpoint
+                               logoutEndpoint:(nullable NSURL *)logoutEndpoint {
+    return [self initWithAuthorizationEndpoint:authorizationEndpoint
+                                 tokenEndpoint:tokenEndpoint
+                          registrationEndpoint:registrationEndpoint
+                                logoutEndpoint:logoutEndpoint
+                             discoveryDocument:nil];
 }
 
 - (instancetype)initWithDiscoveryDocument:(OIDServiceDiscovery *) discoveryDocument {
   return [self initWithAuthorizationEndpoint:discoveryDocument.authorizationEndpoint
                                tokenEndpoint:discoveryDocument.tokenEndpoint
                         registrationEndpoint:discoveryDocument.registrationEndpoint
+                              logoutEndpoint:nil
                            discoveryDocument:discoveryDocument];
 }
 
@@ -126,6 +149,9 @@ NS_ASSUME_NONNULL_BEGIN
                                                 forKey:kTokenEndpointKey];
   NSURL *registrationEndpoint = [aDecoder decodeObjectOfClass:[NSURL class]
                                                        forKey:kRegistrationEndpointKey];
+  NSURL *logoutEndpoint = [aDecoder decodeObjectOfClass:[NSURL class]
+                                                         forKey:kLogoutEndpointKey];
+    
   // We don't accept nil authorizationEndpoints or tokenEndpoints.
   if (!authorizationEndpoint || !tokenEndpoint) {
     return nil;
@@ -137,6 +163,7 @@ NS_ASSUME_NONNULL_BEGIN
   return [self initWithAuthorizationEndpoint:authorizationEndpoint
                                tokenEndpoint:tokenEndpoint
                         registrationEndpoint:registrationEndpoint
+                              logoutEndpoint:logoutEndpoint
                            discoveryDocument:discoveryDocument];
 }
 
@@ -144,6 +171,7 @@ NS_ASSUME_NONNULL_BEGIN
   [aCoder encodeObject:_authorizationEndpoint forKey:kAuthorizationEndpointKey];
   [aCoder encodeObject:_tokenEndpoint forKey:kTokenEndpointKey];
   [aCoder encodeObject:_registrationEndpoint forKey:kRegistrationEndpointKey];
+  [aCoder encodeObject:_logoutEndpoint forKey:kLogoutEndpointKey];
   [aCoder encodeObject:_discoveryDocument forKey:kDiscoveryDocumentKey];
 }
 
@@ -152,10 +180,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)description {
   return [NSString stringWithFormat:
       @"OIDServiceConfiguration authorizationEndpoint: %@, tokenEndpoint: %@, "
-          "registrationEndpoint: %@, discoveryDocument: [%@]",
+          "registrationEndpoint: %@, logoutEndpoint: %@, discoveryDocument: [%@]",
       _authorizationEndpoint,
       _tokenEndpoint,
       _registrationEndpoint,
+      _logoutEndpoint,
       _discoveryDocument];
 }
 

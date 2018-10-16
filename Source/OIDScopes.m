@@ -27,3 +27,5 @@ NSString *const OIDScopeEmail = @"email";
 NSString *const OIDScopeAddress = @"address";
 
 NSString *const OIDScopePhone = @"phone";
+
+NSString *const OIDScopeOffline = @"offline_access";

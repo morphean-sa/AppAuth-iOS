@@ -29,6 +29,7 @@
 #import "OIDRegistrationResponse.h"
 #import "OIDTokenRequest.h"
 #import "OIDTokenResponse.h"
+#import "OIDLogoutRequest.h"
 
 /*! @brief Key used to encode the @c refreshToken property for @c NSSecureCoding.
  */
@@ -413,6 +414,24 @@ static const NSUInteger kExpiryTimeTolerance = 60;
        additionalParameters:additionalParameters];
 }
 
+- (OIDLogoutRequest*)logoutRequest
+{
+    if (!_refreshToken) {
+        [OIDErrorUtilities raiseException:kRefreshTokenRequestException];
+    }
+    return [[OIDLogoutRequest alloc]
+            initWithConfiguration:_lastAuthorizationResponse.request.configuration
+            grantType:OIDGrantTypeRefreshToken
+            authorizationCode:nil
+            redirectURL:_lastAuthorizationResponse.request.redirectURL
+            clientID:_lastAuthorizationResponse.request.clientID
+            clientSecret:_lastAuthorizationResponse.request.clientSecret
+            scope:_lastAuthorizationResponse.request.scope
+            refreshToken:_refreshToken
+            codeVerifier:nil
+            additionalParameters:nil];
+}
+
 #pragma mark - Stateful Actions
 
 - (void)didChangeState {
@@ -497,6 +516,24 @@ static const NSUInteger kExpiryTimeTolerance = 60;
       }
     });
   }];
+}
+
+- (void)performLogout:(OIDLogoutAction)callback
+{
+    OIDLogoutRequest *logoutRequest = [self logoutRequest];
+    
+    [OIDAuthorizationService performLogoutRequest:logoutRequest callback:^(OIDLogoutResponse *_Nullable response,
+                                                                           NSError *_Nullable error)
+     {
+         if (error)
+         {
+             callback(NO);
+         }
+         else
+         {
+             callback(YES);
+         }
+     }];
 }
 
 #pragma mark - Deprecated

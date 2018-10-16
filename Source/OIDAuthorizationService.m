@@ -30,6 +30,8 @@
 #import "OIDTokenRequest.h"
 #import "OIDTokenResponse.h"
 #import "OIDURLQueryComponent.h"
+#import "OIDLogoutRequest.h"
+#import "OIDLogoutResponse.h"
 
 /*! @brief Path appended to an OpenID Connect issuer for discovery
     @see https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig
@@ -354,6 +356,103 @@ NS_ASSUME_NONNULL_BEGIN
   }] resume];
 }
 
+#pragma mark - Logout endpoint
+
++ (void)performLogoutRequest:(OIDLogoutRequest *)request callback:(OIDLogoutCallback)callback
+{
+    NSURLRequest *URLRequest = [request URLRequest];
+    NSURLSession *session = [NSURLSession sharedSession];
+    [[session dataTaskWithRequest:URLRequest
+                completionHandler:^(NSData *_Nullable data,
+                                    NSURLResponse *_Nullable response,
+                                    NSError *_Nullable error) {
+                    if (error) {
+                        // A network error or server error occurred.
+                        NSError *returnedError =
+                        [OIDErrorUtilities errorWithCode:OIDErrorCodeNetworkError
+                                         underlyingError:error
+                                             description:nil];
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                            callback(nil, returnedError);
+                        });
+                        return;
+                    }
+                    
+                    NSHTTPURLResponse *HTTPURLResponse = (NSHTTPURLResponse *)response;
+                    NSInteger statusCode = HTTPURLResponse.statusCode;
+                    if (statusCode != 200) {
+                        // A server error occurred.
+                        NSError *serverError =
+                        [OIDErrorUtilities HTTPErrorWithHTTPResponse:HTTPURLResponse data:data];
+                        
+                        // HTTP 400 may indicate an RFC6749 Section 5.2 error response.
+                        // HTTP 429 may occur during polling for device-flow requests for the slow_down error
+                        // https://tools.ietf.org/html/draft-ietf-oauth-device-flow-03#section-3.5
+                        if (statusCode == 400 || statusCode == 429) {
+                            NSError *jsonDeserializationError;
+                            NSDictionary<NSString *, NSObject<NSCopying> *> *json =
+                            [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonDeserializationError];
+                            
+                            // if the HTTP 400 response parses as JSON and has an 'error' key, it's an OAuth error
+                            // these errors are special as they indicate a problem with the authorization grant
+                            if (json[OIDOAuthErrorFieldError]) {
+                                NSError *oauthError =
+                                [OIDErrorUtilities OAuthErrorWithDomain:OIDOAuthTokenErrorDomain
+                                                          OAuthResponse:json
+                                                        underlyingError:serverError];
+                                dispatch_async(dispatch_get_main_queue(), ^{
+                                    callback(nil, oauthError);
+                                });
+                                return;
+                            }
+                        }
+                        
+                        // not an OAuth error, just a generic server error
+                        NSError *returnedError =
+                        [OIDErrorUtilities errorWithCode:OIDErrorCodeServerError
+                                         underlyingError:serverError
+                                             description:nil];
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                            callback(nil, returnedError);
+                        });
+                        return;
+                    }
+                    
+                    NSError *jsonDeserializationError;
+                    NSDictionary<NSString *, NSObject<NSCopying> *> *json =
+                    [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonDeserializationError];
+                    if (jsonDeserializationError) {
+                        // A problem occurred deserializing the response/JSON.
+                        NSError *returnedError =
+                        [OIDErrorUtilities errorWithCode:OIDErrorCodeJSONDeserializationError
+                                         underlyingError:jsonDeserializationError
+                                             description:nil];
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                            callback(nil, returnedError);
+                        });
+                        return;
+                    }
+                    
+                    OIDLogoutResponse *logoutResponse =
+                    [[OIDLogoutResponse alloc] initWithRequest:request parameters:json];
+                    if (!logoutResponse) {
+                        // A problem occurred constructing the token response from the JSON.
+                        NSError *returnedError =
+                        [OIDErrorUtilities errorWithCode:OIDErrorCodeTokenResponseConstructionError
+                                         underlyingError:jsonDeserializationError
+                                             description:nil];
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                            callback(nil, returnedError);
+                        });
+                        return;
+                    }
+                    
+                    // Success
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        callback(logoutResponse, nil);
+                    });
+                }] resume];
+}
 
 #pragma mark - Registration Endpoint
 
